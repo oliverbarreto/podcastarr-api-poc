@@ -84,6 +84,26 @@ Use asynchronous processing for downloads to handle multiple requests simultaneo
 
 Optimize storage and retrieval of audio files for fast access.
 
+## 2.6 Logging
+
+Use the loguru library for logging.
+This implementation:
+
+- Creates a centralized logging configuration
+- Logs to both console and file with different levels
+- Includes rotation and retention policies for log files
+- Adds structured logging with timestamps and module information
+- Tracks all important events and errors
+- Uses different log levels appropriately (DEBUG, INFO, WARNING, ERROR)
+
+The logs will be stored in the logs directory with daily rotation and 7-day retention. You'll see:
+
+- All requests and their outcomes
+- Download progress and completion
+- Any errors that occur during processing
+- File management operations
+- Application startup and initialization
+
 # 3. Technical Requirements
 
 ## 3.1 Frontend

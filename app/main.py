@@ -4,6 +4,9 @@ import os
 import sqlite3
 
 from .routes.downloads import router as downloads_router
+from .core.logger import get_logger
+
+logger = get_logger("main")
 
 app = FastAPI(title="YouTube Audio Downloader")
 
@@ -19,6 +22,7 @@ app.add_middleware(
 
 # Initialize database
 def init_db():
+    logger.info("Initializing database")
     conn = sqlite3.connect("downloads.db")
     c = conn.cursor()
     c.execute(
@@ -36,12 +40,15 @@ def init_db():
     )
     conn.commit()
     conn.close()
+    logger.info("Database initialization completed")
 
 
 @app.on_event("startup")
 async def startup_event():
+    logger.info("Starting application")
     init_db()
     os.makedirs("downloads", exist_ok=True)
+    logger.info("Application startup completed")
 
 
 # Include routers

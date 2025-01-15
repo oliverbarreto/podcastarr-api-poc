@@ -4,3 +4,4 @@ pytubefix
 pydantic
 python-multipart
 aiosqlite 
+loguru==0.7.2
