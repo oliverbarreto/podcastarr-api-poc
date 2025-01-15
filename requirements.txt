@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+pytubefix
+pydantic
+python-multipart
+aiosqlite 
