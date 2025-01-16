@@ -148,6 +148,121 @@ SQLite for managing:
 - GET /status/{id}: Returns the status of a specific download request.
 - GET /files: Lists publicly available audio files.
 
+## 3.6 Migrations
+
+Migrations are run automatically when the application starts.
+
+Migrations are stored in the `app/migrations` directory.
+
+## 3.7 Logging
+
+Logging is implemented using the `loguru` library.
+
+## 3.8 Environment Variables
+
+Environment variables are stored in the `.env` file.
+
+## 3.9 Serve audio files from a public URL with statistics
+
+The FastAPI app will shares audio files using a public route and will store the access information in a database while serving audio files from the local public folder is a great approach.
+
+Here’s how you can implement it:
+
+- Database Table: Use a database table to track file access counts.
+- Static Files Serving: Serve the files from the public directory.
+- Increment Count: Each time a file is accessed, update the database.
+
+### How It Works
+
+- Static File Serving: Files are stored in the public folder, and the FileResponse class serves them directly.
+- Database Tracking: Every time an audio file is accessed, the app checks the file_access table.
+  - If the file exists, it increments the count column.
+  - If it doesn’t exist, it creates a new entry for that file.
+- Error Handling: The app checks if the file exists in the public directory before serving it. If the file is missing, it raises a 404 error.
+- Statistics Route: The /stats route retrieves and returns the access counts for all files in the database.
+
+### Directory Structure
+
+Ensure your project is structured like this:
+
+```bash
+/project
+│
+├── main.py          # FastAPI app
+├── public/          # Directory containing audio files
+│   ├── file1.mp3
+│   ├── file2.mp3
+│   └── ...
+├── file_access.db   # SQLite database
+└── requirements.txt # Python dependencies
+```
+
+### Advanced Features for statistics
+
+Here’s the updated implementation that includes timestamps for tracking access, file type/size validation, and pagination for the /stats route.
+
+- Timestamps: Track when files are accessed by adding a last_accessed column with a datetime type.
+- File Size Validation: Validate file types or sizes to ensure only appropriate assets are served.
+- Pagination in /stats: Add pagination to handle large datasets.
+
+How it works:
+
+1. Track Last Access Timestamp
+   - Added a last_accessed column to the FileAccess table.
+   - Automatically updates the last_accessed field with the current UTC timestamp whenever a file is accessed.
+2. File Validation
+   - Ensures that only audio files (mp3, wav, ogg, flac) are served.
+   - Limits file size to 10 MB (adjustable by changing the max_file_size_mb variable).
+3. Pagination for /stats
+   - Added skip (default 0) and limit (default 10) query parameters to the /stats endpoint.
+   - The response includes paginated data along with metadata:
+     - total: Total number of files tracked in the database.
+     - skip and limit: Indicate the current slice of data.
+
+Example Usage:
+
+- Serve Audio File:
+
+  - Request: `GET /audio/file1.mp3`
+  - Response: Serves the file if it exists, is an audio file, and is within size limits.
+
+- Get File Access Statistics:
+
+  - Request: `GET /stats?skip=0&limit=5`
+  - Response (example):
+
+```json
+{
+  "data": [
+    {
+      "filename": "file1.mp3",
+      "count": 12,
+      "last_accessed": "2025-01-16T15:30:00"
+    },
+    {
+      "filename": "file2.wav",
+      "count": 5,
+      "last_accessed": "2025-01-16T14:00:00"
+    }
+  ],
+  "total": 20,
+  "skip": 0,
+  "limit": 5
+}
+```
+
+## 3.10 Future Intergration with Frontend
+
+Integrate with Frontend: Build a frontend (e.g., in NextJS) to download files, show current downloaded fieles, use status to provide feedback to the user in the fronten UI, and display stats of file access.
+
+## 3.11 Additional Features
+
+- Preloading Database: Preload database entries with initial file metadata (e.g., on app startup).
+- Rate Limiting
+- Optional CAPTCHA for user verification
+- Sanitize input to prevent injection attacks
+- Enhance Filtering: Add query parameters to filter by file name, date ranges, or access counts.
+
 # 4. Non-Functional Requirements
 
 ## 4.1 Performance
@@ -175,60 +290,6 @@ Mobile-responsive design.
 Clear documentation for APIs and deployment.
 
 Modular codebase for ease of updates and troubleshooting.
-
-# 5. Milestones and Timeline
-
-## 5.1 Phase 1: Research and Planning
-
-Define technical stack and infrastructure (2 weeks).
-
-## 5.2 Phase 2: Development
-
-Backend API with audio download functionality (3 weeks).
-
-Frontend with user interface (3 weeks).
-
-## 5.3 Phase 3: Testing and Deployment
-
-Integration testing (1 week).
-
-Deployment to production (1 week).
-
-## 5.4 Phase 4: Post-Launch
-
-Monitor performance and user feedback.
-
-Implement improvements and fixes (ongoing).
-
-# 6. Risks and Mitigation
-
-## 6.1 Legal Risks
-
-Risk: Violating YouTube’s terms of service.
-
-Mitigation: Include disclaimers and abide by copyright laws.
-
-## 6.2 Technical Risks
-
-Risk: High server load during concurrent downloads.
-
-Mitigation: Implement rate limiting and asynchronous processing.
-
-## 6.3 User Risks
-
-Risk: Users providing invalid or malicious URLs.
-
-Mitigation: Validate and sanitize user input.
-
-# 7. Future Enhancements
-
-Support for additional platforms beyond YouTube.
-
-User accounts to track download history.
-
-Notifications for download completion.
-
-Cloud-based file storage for scalability.
 
 # Why this architecture?
 
