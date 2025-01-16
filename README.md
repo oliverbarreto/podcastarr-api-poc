@@ -91,10 +91,14 @@ DOWNLOADS_PATH=./downloads
 
 4. Run migrations
 
-```bash
-python -m app/migrations/add_video_id.py
-python -m app/migrations/add_videoname.py
-```
+Now migrations are run automatically when the application starts.
+
+> No need to run them manually.
+>
+> ```bash
+> python -m app/migrations/add_video_id.py
+> python -m app/migrations/add_videoname.py
+> ```
 
 6. First, run the FastAPI development server locally:
 
