@@ -85,12 +85,18 @@ pip install -r requirements.txt
 
 ```yaml
 # For local development
-DATABASE_URL="file:./dev.db"
+DATABASE_PATH=./data/downloads.db
+DOWNLOADS_PATH=./downloads
 ```
 
-If you are goig to use docker make sure to change the file location in '.env' file and use `DATABASE_URL="file:/app/prisma/dev.db"`
+4. Run migrations
 
-4. First, run the FastAPI development server locally:
+```bash
+python -m app/migrations/add_video_id.py
+python -m app/migrations/add_videoname.py
+```
+
+6. First, run the FastAPI development server locally:
 
 ```bash
  uvicorn app.main:app --reload

@@ -3,17 +3,21 @@ from pytubefix.cli import on_progress
 import sqlite3
 from datetime import datetime
 import os
+from dotenv import load_dotenv
 
 from ..core.logger import get_logger
+
+# Load environment variables
+load_dotenv()
+DATABASE_PATH = os.getenv("DATABASE_PATH")
+DOWNLOADS_PATH = os.getenv("DOWNLOADS_PATH", "./downloads")
 
 logger = get_logger("services.downloader")
 
 
-async def download_audio(
-    url: str, download_id: str, filename: str, output_path: str = "downloads"
-):
+async def download_audio(url: str, download_id: str, filename: str):
     logger.info(f"Starting download process for ID: {download_id}")
-    conn = sqlite3.connect("downloads.db")
+    conn = sqlite3.connect(DATABASE_PATH)
     c = conn.cursor()
 
     try:
@@ -26,7 +30,7 @@ async def download_audio(
         logger.debug(f"Selected audio stream: {audio_stream}")
 
         # Download the audio with the specified filename
-        audio_stream.download(output_path=output_path, filename=filename)
+        audio_stream.download(output_path=DOWNLOADS_PATH, filename=filename)
 
         logger.info(f"Download completed: {filename}")
 

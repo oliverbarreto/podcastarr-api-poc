@@ -21,8 +21,13 @@ class DownloadStatus(BaseModel):
 
 
 class FileInfo(BaseModel):
+    id: str
+    url: str
     filename: str
+    filepath: str
     size: int
-    created_at: datetime
-    video_id: Optional[str] = None
-    videoname: Optional[str] = None
+    created_at: datetime | None
+    completed_at: datetime | None
+    video_id: str | None
+    videoname: str | None
+    status: str
