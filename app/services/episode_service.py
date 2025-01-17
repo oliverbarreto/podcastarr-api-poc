@@ -4,10 +4,10 @@ import uuid
 from typing import List, Optional
 import os
 from dotenv import load_dotenv
-import pytubefix
 
 from ..models.episode import Episode, EpisodeCreate
 from ..core.logger import get_logger
+from ..lib.pytubefix.youtube_service import YouTubeService
 
 logger = get_logger("services.episode")
 
@@ -19,6 +19,7 @@ DATABASE_PATH = os.getenv("DATABASE_PATH", "./data/downloads.db")
 class EpisodeService:
     def __init__(self, db_path: str = DATABASE_PATH):
         self.db_path = db_path
+        self.youtube_service = YouTubeService()
 
     def create_episode(self, episode_data: EpisodeCreate) -> Episode:
         conn = sqlite3.connect(self.db_path)
@@ -26,13 +27,17 @@ class EpisodeService:
 
         try:
             # Extract metadata from YouTube
-            yt = pytubefix.YouTube(str(episode_data.url))
-            video_id = self._extract_video_id(str(episode_data.url))
+            metadata = self.youtube_service.get_video_metadata(str(episode_data.url))
+            if not metadata:
+                raise ValueError(
+                    f"Could not extract metadata from URL: {episode_data.url}"
+                )
+
+            video_id = metadata["video_id"]
 
             # Check if episode already exists
             cursor.execute("SELECT id FROM episodes WHERE video_id = ?", (video_id,))
             existing = cursor.fetchone()
-
             if existing:
                 return self.get_episode_by_id(existing[0])
 
@@ -55,29 +60,23 @@ class EpisodeService:
                     now,
                     "pending",
                     video_id,
-                    yt.title,
-                    yt.author,  # Use author as subtitle
-                    yt.description,
+                    metadata["title"],
+                    metadata["author"],  # Use author as subtitle
+                    metadata["description"],
                     0,  # Default position
-                    yt.thumbnail_url,
+                    metadata["thumbnail_url"],
                     now,  # Use current time as published_at
                     False,  # Default explicit
-                    yt.author,
-                    (
-                        ",".join(yt.keywords)
-                        if hasattr(yt, "keywords") and yt.keywords
-                        else None
-                    ),
+                    metadata["author"],
+                    metadata["keywords"],
                 ),
             )
 
             conn.commit()
             return self.get_episode_by_id(episode_id)
-
         except Exception as e:
             logger.error(f"Error creating episode: {str(e)}")
             raise
-
         finally:
             conn.close()
 
@@ -284,9 +283,8 @@ class EpisodeService:
         )
 
     def _extract_video_id(self, url: str) -> str:
-        # TODO: Implement proper YouTube video ID extraction
-        # This is a placeholder implementation
-        if "v=" in url:
-            return url.split("v=")[1].split("&")[0]
-
-        return url.split("/")[-1]
+        # Use the utility function
+        video_id = extract_video_id(url)
+        if not video_id:
+            raise ValueError(f"Could not extract video ID from URL: {url}")
+        return video_id

@@ -5,13 +5,16 @@ from pydantic import HttpUrl
 from ..core.logger import get_logger
 from ..models.episode import Episode, EpisodeCreate
 from ..services.episode_service import EpisodeService
-from ..services.downloader import Downloader
+
+from ..lib.pytubefix.youtube_service import YouTubeService
+from ..lib.pytubefix.downloader import YouTubeDownloader
 
 router = APIRouter(prefix="/api", tags=["downloads"])
 logger = get_logger("routes.downloads")
 
 episode_service = EpisodeService()
-downloader = Downloader()
+youtube_service = YouTubeService()
+downloader = YouTubeDownloader()
 
 
 @router.post("/download", response_model=Episode)
@@ -23,8 +26,24 @@ async def create_download(url: HttpUrl, background_tasks: BackgroundTasks):
         new_episode = episode_service.create_episode(episode_data)
 
         # Start the download in the background
-        background_tasks.add_task(downloader.download_audio, str(new_episode.id))
+        async def download_and_update():
+            result = await downloader.download_audio(str(url), new_episode.video_id)
+            if result["success"]:
+                episode_service.update_episode_status(
+                    str(new_episode.id),
+                    "downloaded",
+                    media_url=result["media_url"],
+                    media_size=result["media_size"],
+                    media_duration=result["media_duration"],
+                    media_length=result["media_length"],
+                )
+            else:
+                episode_service.update_episode_status(
+                    str(new_episode.id),
+                    "error",
+                )
 
+        background_tasks.add_task(download_and_update)
         return new_episode
 
     except Exception as e:
@@ -38,7 +57,6 @@ async def get_download_status(episode_id: str):
     episode = episode_service.get_episode_by_id(episode_id)
     if not episode:
         raise HTTPException(status_code=404, detail="Episode not found")
-
     return episode
 
 
@@ -47,7 +65,6 @@ async def list_downloads(limit: int = 100, offset: int = 0):
     """List all downloads"""
     try:
         return episode_service.get_episodes(limit=limit, offset=offset)
-
     except Exception as e:
         logger.error(f"Error listing downloads: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))

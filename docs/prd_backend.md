@@ -269,7 +269,7 @@ We need to create a new table for podcast episodes from scratch.
 - We need to add the fields fo the table "file_access" in the new "episodes" table to track the access to the audio files.
 - We need to modify the structure so it has:
 
-EPISODE:
+### EPISODES:
 
 Needed for the frontend functionality:
 
@@ -310,6 +310,25 @@ Other stored data of the episode extracted from the youtube video library:
 
 - mediaduration: int (Not used for iTunes XML)
 - medialength: int (Not used for iTunes XML)
+
+### CHANNEL:
+
+- id UUID - primary_key
+- name String - index, unique=False
+- description String
+- websiteurl String
+- explicit Boolean
+- imageurl String
+- copyright String
+- language String
+- feed_url String
+- category String
+- authors String
+- authors_email String
+- owner String
+- owner_email String
+- createdAt
+- updatedAt
 
 ## 3.11 Future Intergration with Frontend
 
@@ -382,6 +401,8 @@ Built-in optimizations, such as image handling and bundling, improve the app's p
 ### Powerful Libraries:
 
 Python has libraries like pytubefix for downloading YouTube videos and many others for tasks like file handling and database interactions.
+
+⚠ IMPORTANT NOTE: PitubeFix DOES NOT WORK for downloading audio of Kids videos from YouTube. TODO: find a way to download audio of Kids videos from YouTube. Maybe using a different library or loggin in.
 
 ### FastAPI:
 
