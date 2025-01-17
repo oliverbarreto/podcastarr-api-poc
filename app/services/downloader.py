@@ -1,55 +1,64 @@
-from pytubefix import YouTube
-from pytubefix.cli import on_progress
-import sqlite3
-from datetime import datetime
 import os
+from typing import Optional
+from datetime import datetime
+import pytubefix
 from dotenv import load_dotenv
 
 from ..core.logger import get_logger
+from ..services.episode_service import EpisodeService
 
 # Load environment variables
 load_dotenv()
-DATABASE_PATH = os.getenv("DATABASE_PATH")
 DOWNLOADS_PATH = os.getenv("DOWNLOADS_PATH", "./downloads")
 
 logger = get_logger("services.downloader")
 
 
-async def download_audio(url: str, download_id: str, filename: str):
-    logger.info(f"Starting download process for ID: {download_id}")
-    conn = sqlite3.connect(DATABASE_PATH)
-    c = conn.cursor()
+class Downloader:
+    def __init__(self):
+        self.episode_service = EpisodeService()
 
-    try:
-        # Initialize YouTube object
-        yt = YouTube(url, on_progress_callback=on_progress)
-        logger.info(f"Downloading audio from: {yt.title}")
+    async def download_audio(self, episode_id: str) -> bool:
+        """Downloads audio for a given episode"""
+        try:
+            # Get episode
+            episode = self.episode_service.get_episode_by_id(episode_id)
+            if not episode:
+                logger.error(f"Episode not found: {episode_id}")
+                return False
 
-        # Get audio stream
-        audio_stream = yt.streams.get_audio_only()
-        logger.debug(f"Selected audio stream: {audio_stream}")
+            # Create YouTube object
+            yt = pytubefix.YouTube(str(episode.url))
 
-        # Download the audio with the specified filename
-        audio_stream.download(output_path=DOWNLOADS_PATH, filename=filename)
+            # Get audio stream
+            audio_stream = yt.streams.get_audio_only()
+            if not audio_stream:
+                logger.error(f"No audio stream found for {episode.url}")
+                self.episode_service.update_episode_status(episode_id, "error")
+                return False
 
-        logger.info(f"Download completed: {filename}")
+            # Generate filename
+            filename = f"{episode.video_id}.mp3"
+            file_path = os.path.join(DOWNLOADS_PATH, filename)
 
-        # Update database with success status
-        c.execute(
-            "UPDATE downloads SET status = ?, completed_at = ? WHERE id = ?",
-            ("completed", datetime.utcnow(), download_id),
-        )
+            # Download audio
+            logger.info(f"Downloading audio for episode {episode_id}")
+            audio_stream.download(output_path=DOWNLOADS_PATH, filename=filename)
 
-    except Exception as e:
-        error_message = f"Error downloading audio: {str(e)}"
-        logger.error(error_message, exc_info=True)
+            # Update episode with media information
+            self.episode_service.update_episode_status(
+                episode_id,
+                status="downloaded",
+                media_url=f"/audio/{filename}",
+                media_size=os.path.getsize(file_path),
+                media_duration=yt.length,
+                media_length=audio_stream.filesize,
+            )
 
-        # Update database with error status
-        c.execute(
-            "UPDATE downloads SET status = ?, completed_at = ? WHERE id = ?",
-            (f"error: {str(e)}", datetime.utcnow(), download_id),
-        )
+            logger.info(f"Successfully downloaded audio for episode {episode_id}")
+            return True
 
-    finally:
-        conn.commit()
-        conn.close()
+        except Exception as e:
+            logger.error(f"Error downloading audio for episode {episode_id}: {str(e)}")
+            self.episode_service.update_episode_status(episode_id, "error")
+            return False

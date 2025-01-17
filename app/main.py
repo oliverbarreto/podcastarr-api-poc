@@ -5,9 +5,12 @@ from dotenv import load_dotenv
 from contextlib import asynccontextmanager
 
 from .routes.downloads import router as downloads_router
+from .routes.audio import router as audio_router
+from .routes.stats import router as stats_router
 from .core.logger import get_logger
 from .migrations.migration_manager import MigrationManager
-from .routes.audio import router as audio_router
+
+# from .routes.episodes import router as episodes_router
 
 # Load environment variables
 load_dotenv()
@@ -51,3 +54,5 @@ app.add_middleware(
 # Include routers
 app.include_router(downloads_router)
 app.include_router(audio_router)
+app.include_router(stats_router)
+# app.include_router(episodes_router)

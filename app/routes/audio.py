@@ -1,78 +1,60 @@
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
-from typing import List, Optional, Union
-from datetime import datetime
 import os
-from pydantic import BaseModel
+from typing import List
+from dotenv import load_dotenv
+
 from ..core.logger import get_logger
-from ..services.filestats_service import FileStats
+from ..services.episode_service import EpisodeService
+from ..models.episode import Episode
 
-logger = get_logger("routes.audio")
-
-
-# Models
-class FileAccessStats(BaseModel):
-    filename: str
-    access_count: int
-    last_accessed: datetime
-
-
-class PaginatedStats(BaseModel):
-    data: List[FileAccessStats]
-    total: int
-    skip: int
-    limit: int
-
+# Load environment variables
+load_dotenv()
+DOWNLOADS_PATH = os.getenv("DOWNLOADS_PATH", "./downloads")
 
 router = APIRouter(prefix="/audio", tags=["audio"])
-file_stats = FileStats()
-
-DOWNLOADS_PATH = os.getenv("DOWNLOADS_PATH", "./downloads")
-ALLOWED_EXTENSIONS = {".mp3", ".wav", ".ogg", ".flac", ".m4a"}
-MAX_FILE_SIZE_MB = 300
+logger = get_logger("routes.audio")
+episode_service = EpisodeService()
 
 
-@router.get("/stats", response_model=PaginatedStats)
-async def get_all_stats(skip: int = 0, limit: int = 10):
-    stats = await file_stats.get_stats(skip, limit)
-    total = await file_stats.get_total_count()
+@router.get("/files", response_model=List[Episode])
+async def list_audio_files(limit: int = 100, offset: int = 0):
+    """List all downloaded audio files"""
+    try:
+        # Get all episodes with downloaded status
+        episodes = episode_service.get_episodes_by_status("downloaded", limit, offset)
+        return episodes
 
-    return PaginatedStats(data=stats, total=total, skip=skip, limit=limit)
-
-
-@router.get("/stats/{filename}", response_model=FileAccessStats)
-async def get_file_stats(filename: str):
-    stat = await file_stats.get_file_stats(filename)
-    if not stat:
-        raise HTTPException(status_code=404, detail="Stats not found for this file")
-    return stat
+    except Exception as e:
+        logger.error(f"Error listing audio files: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/{filename}")
-async def serve_audio(filename: str):
-    file_path = os.path.join(DOWNLOADS_PATH, filename)
+@router.get("/{video_id}")
+async def get_audio_file(video_id: str):
+    """Get a specific audio file by its video ID"""
+    try:
+        # Get episode by video_id
+        episode = episode_service.get_episode_by_video_id(video_id)
 
-    # Validate file exists
-    if not os.path.exists(file_path):
-        raise HTTPException(status_code=404, detail="File not found")
+        if not episode:
+            raise HTTPException(status_code=404, detail="Audio file not found")
 
-    # Validate file extension
-    if not any(filename.lower().endswith(ext) for ext in ALLOWED_EXTENSIONS):
-        raise HTTPException(status_code=400, detail="Invalid file type")
+        # Construct filename from video_id
+        filename = f"{video_id}.mp3"
+        file_path = os.path.join(DOWNLOADS_PATH, filename)
 
-    # Validate file size
-    file_size_mb = os.path.getsize(file_path) / (1024 * 1024)
-    if file_size_mb > MAX_FILE_SIZE_MB:
-        raise HTTPException(status_code=400, detail="File too large")
+        if not os.path.exists(file_path):
+            raise HTTPException(status_code=404, detail="Audio file not found")
 
-    # Update stats
-    await file_stats.record_access(filename)
+        # Increment access count
+        episode_service.increment_access_count(str(episode.id))
 
-    return FileResponse(
-        file_path,
-        media_type="audio/mp4",  # For .m4a files
-        headers={
-            "Accept-Ranges": "bytes",
-            "Content-Disposition": f"inline; filename={filename}",
-        },
-    )
+        return FileResponse(file_path, media_type="audio/mpeg", filename=filename)
+
+    except HTTPException:
+        raise
+
+    except Exception as e:
+        logger.error(f"Error serving audio file: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))

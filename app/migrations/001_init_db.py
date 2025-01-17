@@ -18,21 +18,57 @@ def migrate():
     c = conn.cursor()
 
     try:
+        # Create episodes table
         c.execute(
             """
-            CREATE TABLE IF NOT EXISTS downloads
-            (id TEXT PRIMARY KEY, 
-             url TEXT,
-             video_id TEXT,
-             videoname TEXT,
-             status TEXT,
-             filename TEXT,
-             created_at TIMESTAMP,
-             completed_at TIMESTAMP)
-            """
+            CREATE TABLE IF NOT EXISTS episodes (
+                id TEXT PRIMARY KEY,
+                url TEXT NOT NULL,
+                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                status TEXT NOT NULL DEFAULT 'pending',
+                tags TEXT,
+                
+                -- Statistics fields
+                count INTEGER NOT NULL DEFAULT 0,
+                last_accessed_at TIMESTAMP,
+                
+                -- iTunes RSS feed fields
+                video_id TEXT NOT NULL UNIQUE,
+                title TEXT NOT NULL,
+                subtitle TEXT NOT NULL,
+                summary TEXT NOT NULL,
+                position INTEGER NOT NULL,
+                image_url TEXT NOT NULL,
+                published_at TIMESTAMP NOT NULL,
+                explicit BOOLEAN NOT NULL DEFAULT FALSE,
+                
+                -- Media fields
+                media_url TEXT,
+                media_size INTEGER,
+                
+                -- Additional iTunes fields
+                author TEXT NOT NULL,
+                keywords TEXT,
+                
+                -- YouTube metadata
+                media_duration INTEGER,
+                media_length INTEGER
+            )
+        """
         )
+
+        # Create indexes for episodes table
+        c.execute(
+            "CREATE INDEX IF NOT EXISTS idx_episodes_video_id ON episodes(video_id)"
+        )
+        c.execute("CREATE INDEX IF NOT EXISTS idx_episodes_status ON episodes(status)")
+        c.execute(
+            "CREATE INDEX IF NOT EXISTS idx_episodes_created_at ON episodes(created_at)"
+        )
+
         conn.commit()
-        logger.info("Migration successful: Initialized downloads table")
+        logger.info("Migration successful: Initialized episodes table")
 
     except Exception as e:
         logger.error(f"Error during migration: {str(e)}")
