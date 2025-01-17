@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from .routes.downloads import router as downloads_router
 from .core.logger import get_logger
 from .migrations.migration_manager import MigrationManager
+from .routes.audio import router as audio_router
 
 # Load environment variables
 load_dotenv()
@@ -41,3 +42,4 @@ async def startup_event():
 
 # Include routers
 app.include_router(downloads_router)
+app.include_router(audio_router)
