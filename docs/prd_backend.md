@@ -251,11 +251,71 @@ Example Usage:
 }
 ```
 
-## 3.10 Future Intergration with Frontend
+## 3.10 Prepare Model for Production before integration with Frontend
+
+Acutally we have a model for podcast episodes, but we need to prepare it for production before integration with Frontend.
+
+Current Models where we have two tables:
+
+- downloads
+- file_access
+
+We need to create a new table for podcast episodes from scratch.
+
+- New table named: episodes
+
+- We don not need to migrate any data.
+- We will create a new table with the whole data needed and forget the previous table and data.
+- We need to add the fields fo the table "file_access" in the new "episodes" table to track the access to the audio files.
+- We need to modify the structure so it has:
+
+EPISODE:
+
+Needed for the frontend functionality:
+
+- id: UUID - Primary Key
+- url: string (the same url passed to download the audio function)
+- createdAt
+- updatedAt
+- status: string (pending, downloaded, error)
+- tags: str (not used for iTunes XML)
+
+Needed for the statistics feature:
+
+- count: int (number of times the audio file has been accessed)
+- lastaccessedAt: datetime (timestamp of the last time the audio file was accessed)
+
+Needed for the backend functionality to create the iTunes RSS feed:
+
+- videoid: string (extracted from the youtube video url passed to download the audio function, and used to create the id for the episode. There cannot be two episodes with the same videoid in the same podcast channel/feed. It is used to create the id for the episode in the iTunes RSS feed with a unique identifier for the podcast channel eg: "com.uuebcast.uuid.{}".format(episode.videoid)" vs UUID)
+- title (Needed for generating XML iTunes feed)
+- subtitle (Needed for generating XML iTunes feed)
+- summary (Needed for generating XML iTunes feed)
+- position: int (Needed for generating XML iTunes feed)
+- imageurl (Needed for generating XML iTunes feed - it is named "image" in the object to create the iTunes RSS feed)
+- publishedAt: datetime (Needed for generating XML iTunes feed - named "publication_date" in the object to create the iTunes RSS feed: `pytz.utc.localize(episode.date_created)`)
+- explicit: Bool (Needed for generating XML iTunes feed)
+
+Needed to create the Media object for every episode in the iTunes RSS feed:
+
+- mediaurl: string (Needed for generating XML iTunes feed - mediaurl eg "http://localhost:8000/audio/file1.mp3 or http://server.com/audio/file1.mp3")
+- mediasize: int (Needed for generating XML iTunes feed - used when creating media object)
+
+Needed to create other fields for the episode for the iTunes RSS feed:
+
+- author (Needed for generating XML iTunes feed. The "Subtitle" of the episode is created with the author ,eg: "by Rene Ritchie published on Tuesday, June 8 2021 at 11:52:27")
+- keywords: string (Needed for generating XML iTunes feed. The "keywords" are added to the summary of the episode)
+
+Other stored data of the episode extracted from the youtube video library:
+
+- mediaduration: int (Not used for iTunes XML)
+- medialength: int (Not used for iTunes XML)
+
+## 3.11 Future Intergration with Frontend
 
 Integrate with Frontend: Build a frontend (e.g., in NextJS) to download files, show current downloaded fieles, use status to provide feedback to the user in the fronten UI, and display stats of file access.
 
-## 3.11 Additional Features
+## 3.12 Additional Features
 
 - Preloading Database: Preload database entries with initial file metadata (e.g., on app startup).
 - Rate Limiting
