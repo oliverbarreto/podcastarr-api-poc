@@ -255,6 +255,8 @@ Example Usage:
 
 Acutally we have a model for podcast episodes, but we need to prepare it for production before integration with Frontend.
 
+Please do not use any ORM like SQLAlchemy. Use only raw SQLite.
+
 Current Models where we have two tables:
 
 - downloads
