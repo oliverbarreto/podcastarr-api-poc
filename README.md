@@ -29,10 +29,14 @@ The backend is in charge of downloading the audio from the Youtube videos and st
 ## Tech Stack
 
 - [FastAPI](https://fastapi.tiangolo.com/)
-- [PytubeFix](https://github.com/jdevera/pytubefix)
 - [SQLite](https://www.sqlite.org/)
 - [LogGuru](https://loguru.readthedocs.io/en/stable/)
 - [Docker](https://www.docker.com/)
+
+For downloading audio we are evaluating two libraries:
+
+- [PytubeFix](https://github.com/jdevera/pytubefix)
+- [Yt-dlp](https://github.com/yt-dlp/yt-dlp)
 
 ## Features:
 

@@ -9,18 +9,7 @@ from ..services.episode_service import EpisodeService
 logger = get_logger("routes.stats")
 
 
-class FileAccessStats(BaseModel):
-    filename: str
-    video_id: str
-    count: int
-    last_accessed: datetime | None
-
-
-class PaginatedStats(BaseModel):
-    data: List[FileAccessStats]
-    total: int
-    skip: int
-    limit: int
+from ..models.stats import FileAccessStats, PaginatedStats
 
 
 router = APIRouter(prefix="/stats", tags=["stats"])
@@ -38,7 +27,7 @@ async def get_file_stats(skip: int = 0, limit: int = 10):
         # Convert episodes to FileAccessStats
         stats = [
             FileAccessStats(
-                filename=f"{episode.video_id}.mp3",
+                filename=episode.title,
                 video_id=episode.video_id,
                 count=episode.count,
                 last_accessed=episode.last_accessed_at,
@@ -47,6 +36,7 @@ async def get_file_stats(skip: int = 0, limit: int = 10):
         ]
 
         return PaginatedStats(data=stats, total=total, skip=skip, limit=limit)
+
     except Exception as e:
         logger.error(f"Error getting file stats: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -61,13 +51,14 @@ async def get_file_stats_by_id(video_id: str):
             raise HTTPException(status_code=404, detail="Stats not found for this file")
 
         return FileAccessStats(
-            filename=f"{episode.video_id}.mp3",
+            filename=episode.title,
             video_id=episode.video_id,
             count=episode.count,
             last_accessed=episode.last_accessed_at,
         )
     except HTTPException:
         raise
+
     except Exception as e:
         logger.error(f"Error getting file stats: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))

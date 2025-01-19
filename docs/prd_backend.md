@@ -26,6 +26,20 @@ Casual users who want to download audio for offline use.
 
 Individuals seeking audio-only versions of educational content or podcasts.
 
+## 1.4 Tech Stack
+
+- Python 3.12
+- FastAPI
+- SQLite
+- loguru
+- uvicorn
+- asyncio
+
+For downloading audio we are going to evalute two libraries:
+
+- [yt-dlp](https://github.com/yt-dlp/yt-dlp)
+- [pytubefix](https://github.com/pytubefix/pytubefix)
+
 # 2. Features
 
 ## 2.1 Core Features
@@ -103,6 +117,16 @@ The logs will be stored in the logs directory with daily rotation and 7-day rete
 - Any errors that occur during processing
 - File management operations
 - Application startup and initialization
+
+## 2.7 Audio Download
+
+The api will download audio in the best quality possible from the Youtube video and store information about the Youtube Video to be used by the frontend, it will store it in the database. The audio will be stored locally in the public folder.
+
+There will be a route to get the audio file from the public folder and serve it to the user, responsible for collecting and storing usage of access to episodes which will be later used in a route to get the statistics of the audio files.
+
+## 2.8 Statistics
+
+The api will collect and store usage of access to episodes which will be later used in a route to provide statistics of the audio files to the frontend app.
 
 # 3. Technical Requirements
 
@@ -332,11 +356,30 @@ Other stored data of the episode extracted from the youtube video library:
 - createdAt
 - updatedAt
 
-## 3.11 Future Intergration with Frontend
+## 3.11 Download Audio & Statistics
+
+The api will download audio in the best quality possible from the Youtube video using a downloader.
+
+We should modularize good the architecture to provide abstraction of the actual library use to dowload the audio.
+
+We are evaluating two libraries:
+
+- pytubefix (DONE)
+- yt-dlp (TBD)
+
+There will be a route to get the audio file from the public folder and serve it to the user, responsible for collecting and storing usage of access to episodes which will be later used in a route to get the statistics of the audio files.
+
+## 2.8 Statistics (DONE)
+
+The api will collect and store usage of access to episodes which will be later used in a route to provide statistics of the audio files to the frontend app.
+
+## FUTURE FEATURES
+
+### 3.11 Future Intergration with Frontend
 
 Integrate with Frontend: Build a frontend (e.g., in NextJS) to download files, show current downloaded fieles, use status to provide feedback to the user in the fronten UI, and display stats of file access.
 
-## 3.12 Additional Features
+### 3.12 Additional Features
 
 - Preloading Database: Preload database entries with initial file metadata (e.g., on app startup).
 - Rate Limiting

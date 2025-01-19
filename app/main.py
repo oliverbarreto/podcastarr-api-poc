@@ -4,10 +4,10 @@ import os
 from dotenv import load_dotenv
 from contextlib import asynccontextmanager
 
-from .routes.downloads import router as downloads_router
-from .routes.audio import router as audio_router
-from .routes.stats import router as stats_router
-from .routes.channel import router as channel_router
+from .routes.downloads_router import router as downloads_router
+from .routes.audio_router import router as audio_router
+from .routes.stats_router import router as stats_router
+from .routes.channel_router import router as channel_router
 from .core.logger import get_logger
 from .migrations.migration_manager import MigrationManager
 

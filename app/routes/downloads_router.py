@@ -17,6 +17,7 @@ youtube_service = YouTubeDownloadService()
 @router.post("/download", response_model=Episode)
 async def create_download(url: HttpUrl, background_tasks: BackgroundTasks):
     """Create a new episode from a YouTube URL and start its download"""
+
     try:
         # First extract video information
         video_info = await youtube_service.extract_video_info(str(url))
@@ -39,17 +40,25 @@ async def create_download(url: HttpUrl, background_tasks: BackgroundTasks):
             duration=video_info["duration"],
             explicit=video_info.get("explicit", False),
             position=video_info.get("position", 0),
-            status="downloading",  # Override initial status
+            status="pending",  # Override initial status
         )
+
         new_episode = episode_service.create_episode(episode_data)
 
         # Start the download in the background
         async def download_and_update():
             try:
+                # Update episode status to downloading just before starting the download
+                episode_service.update_episode_status(
+                    str(new_episode.id), "downloading"
+                )
+
+                # Start the download
                 success, result = await youtube_service.download_audio(
                     str(url), new_episode.video_id
                 )
 
+                # Update episode status to downloaded after successful download
                 if success:
                     episode_service.update_episode_status(
                         str(new_episode.id),
@@ -58,6 +67,8 @@ async def create_download(url: HttpUrl, background_tasks: BackgroundTasks):
                         media_size=result["media_size"],
                         media_length=result["media_length"],
                     )
+
+                # Update episode status to error if download fails
                 else:
                     logger.error(f"Download failed: {result.get('error')}")
                     episode_service.update_episode_status(
@@ -65,6 +76,7 @@ async def create_download(url: HttpUrl, background_tasks: BackgroundTasks):
                         "error",
                         error_message=result.get("error", "Unknown error"),
                     )
+
             except Exception as e:
                 logger.error(f"Error in download process: {str(e)}")
                 episode_service.update_episode_status(

@@ -9,6 +9,8 @@ from ..models.episode import Episode, EpisodeCreate
 from ..core.logger import get_logger
 from ..lib.pytubefix.youtube_service import YouTubeService
 
+from ..lib.utils import extract_video_id
+
 logger = get_logger("services.episode")
 
 # Load environment variables
@@ -26,17 +28,10 @@ class EpisodeService:
         cursor = conn.cursor()
 
         try:
-            # Extract metadata from YouTube
-            metadata = self.youtube_service.get_video_metadata(str(episode_data.url))
-            if not metadata:
-                raise ValueError(
-                    f"Could not extract metadata from URL: {episode_data.url}"
-                )
-
-            video_id = metadata["video_id"]
-
             # Check if episode already exists
-            cursor.execute("SELECT id FROM episodes WHERE video_id = ?", (video_id,))
+            cursor.execute(
+                "SELECT id FROM episodes WHERE video_id = ?", (episode_data.video_id,)
+            )
             existing = cursor.fetchone()
             if existing:
                 return self.get_episode_by_id(existing[0])
@@ -50,33 +45,37 @@ class EpisodeService:
                     id, url, created_at, updated_at, status, 
                     video_id, title, subtitle, summary,
                     position, image_url, published_at, explicit,
-                    author, keywords
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    author, keywords, media_duration
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
                 (
                     episode_id,
                     str(episode_data.url),
                     now,
                     now,
-                    "pending",
-                    video_id,
-                    metadata["title"],
-                    metadata["author"],  # Use author as subtitle
-                    metadata["description"],
-                    0,  # Default position
-                    metadata["thumbnail_url"],
-                    now,  # Use current time as published_at
-                    False,  # Default explicit
-                    metadata["author"],
-                    metadata["keywords"],
+                    episode_data.status,
+                    episode_data.video_id,
+                    episode_data.title,
+                    episode_data.subtitle,
+                    episode_data.summary,
+                    episode_data.position,
+                    episode_data.image_url,
+                    episode_data.published_at or now,
+                    episode_data.explicit,
+                    episode_data.author,
+                    episode_data.keywords,
+                    episode_data.duration,
                 ),
             )
 
             conn.commit()
             return self.get_episode_by_id(episode_id)
+
         except Exception as e:
             logger.error(f"Error creating episode: {str(e)}")
+            conn.rollback()
             raise
+
         finally:
             conn.close()
 
@@ -285,6 +284,8 @@ class EpisodeService:
     def _extract_video_id(self, url: str) -> str:
         # Use the utility function
         video_id = extract_video_id(url)
+
         if not video_id:
             raise ValueError(f"Could not extract video ID from URL: {url}")
+
         return video_id
