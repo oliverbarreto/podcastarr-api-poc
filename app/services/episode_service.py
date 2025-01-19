@@ -95,17 +95,29 @@ class EpisodeService:
             conn.close()
 
     def get_episode_by_video_id(self, video_id: str) -> Optional[Episode]:
+        """Get episode by video ID with all fields"""
+
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
 
         try:
-            cursor.execute("SELECT * FROM episodes WHERE video_id = ?", (video_id,))
+            cursor.execute(
+                """
+                SELECT * FROM episodes 
+                WHERE video_id = ?
+                """,
+                (video_id,),
+            )
             row = cursor.fetchone()
 
             if not row:
                 return None
 
             return self._row_to_episode(row)
+
+        except Exception as e:
+            logger.error(f"Error getting episode by video ID: {str(e)}")
+            return None
 
         finally:
             conn.close()

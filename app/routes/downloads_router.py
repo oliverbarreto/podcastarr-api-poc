@@ -91,20 +91,31 @@ async def create_download(url: HttpUrl, background_tasks: BackgroundTasks):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/status/{episode_id}", response_model=Episode)
-async def get_download_status(episode_id: str):
-    """Get the status of a specific download"""
-    episode = episode_service.get_episode_by_id(episode_id)
-    if not episode:
-        raise HTTPException(status_code=404, detail="Episode not found")
-    return episode
+@router.get("/status/{video_id}", response_model=Episode)
+async def get_download_status(video_id: str):
+    """Get the status of a specific download by video ID"""
+
+    try:
+        episode = episode_service.get_episode_by_video_id(video_id)
+        if not episode:
+            raise HTTPException(status_code=404, detail="Episode not found")
+        return episode
+
+    except HTTPException:
+        raise
+
+    except Exception as e:
+        logger.error(f"Error getting download status: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/downloads", response_model=List[Episode])
 async def list_downloads(limit: int = 100, offset: int = 0):
     """List all downloads"""
+
     try:
         return episode_service.get_episodes(limit=limit, offset=offset)
+
     except Exception as e:
         logger.error(f"Error listing downloads: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
