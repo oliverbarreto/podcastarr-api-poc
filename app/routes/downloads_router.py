@@ -60,6 +60,7 @@ async def create_download(url: HttpUrl, background_tasks: BackgroundTasks):
 
                 # Update episode status to downloaded after successful download
                 if success:
+                    # Update with the downloaded file information
                     episode_service.update_episode_status(
                         str(new_episode.id),
                         "downloaded",

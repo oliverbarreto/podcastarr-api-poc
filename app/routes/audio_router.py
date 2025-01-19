@@ -41,8 +41,9 @@ async def get_audio_file(video_id: str):
             raise HTTPException(status_code=404, detail="Audio file not found")
 
         # Construct filename from video_id
-        filename = f"{video_id}.mp3"
-        file_path = os.path.join(DOWNLOADS_PATH, filename)
+        filename = f"{video_id}.m4a"
+        # file_path = os.path.join(DOWNLOADS_PATH, filename)
+        file_path = episode.media_url
 
         if not os.path.exists(file_path):
             raise HTTPException(status_code=404, detail="Audio file not found")

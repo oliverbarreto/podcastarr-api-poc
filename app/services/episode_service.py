@@ -159,7 +159,9 @@ class EpisodeService:
         media_size: Optional[int] = None,
         media_duration: Optional[int] = None,
         media_length: Optional[int] = None,
+        error_message: Optional[str] = None,
     ) -> Optional[Episode]:
+        """Update episode status and media information"""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
 
@@ -168,6 +170,7 @@ class EpisodeService:
             params = [status, datetime.utcnow()]
 
             if media_url is not None:
+                # Ensure we're using the correct path format
                 update_fields.append("media_url = ?")
                 params.append(media_url)
 
@@ -182,6 +185,10 @@ class EpisodeService:
             if media_length is not None:
                 update_fields.append("media_length = ?")
                 params.append(media_length)
+
+            if error_message is not None:
+                update_fields.append("error_message = ?")
+                params.append(error_message)
 
             params.append(episode_id)
 

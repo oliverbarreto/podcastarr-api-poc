@@ -127,6 +127,7 @@ class YouTubeDownloaderYTDLP:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 ydl.download([url])
 
+            # Get the downloaded file info using the actual download path
             file_path = os.path.join(
                 self.download_path, f"{video_id}.{self.audio_format}"
             )
@@ -135,7 +136,7 @@ class YouTubeDownloaderYTDLP:
             return {
                 "success": True,
                 "file_path": file_path,
-                "media_url": f"/audio/{video_id}.{self.audio_format}",
+                "media_url": file_path,  # Use the actual file path
                 "media_size": file_size,
             }
         except Exception as e:
