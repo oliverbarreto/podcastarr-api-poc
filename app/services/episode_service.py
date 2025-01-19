@@ -211,7 +211,7 @@ class EpisodeService:
             conn.close()
 
     def get_episodes_by_access(self, limit: int = 10, offset: int = 0) -> List[Episode]:
-        """Get episodes ordered by access count"""
+        """Get all episodes ordered by access count"""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
 
@@ -219,8 +219,7 @@ class EpisodeService:
             cursor.execute(
                 """
                 SELECT * FROM episodes 
-                WHERE count > 0
-                ORDER BY count DESC, last_accessed_at DESC 
+                ORDER BY count DESC, last_accessed_at DESC NULLS LAST, created_at DESC
                 LIMIT ? OFFSET ?
                 """,
                 (limit, offset),
@@ -230,12 +229,12 @@ class EpisodeService:
             conn.close()
 
     def get_total_episodes(self) -> int:
-        """Get total number of episodes with access count > 0"""
+        """Get total number of episodes"""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
 
         try:
-            cursor.execute("SELECT COUNT(*) FROM episodes WHERE count > 0")
+            cursor.execute("SELECT COUNT(*) FROM episodes")
             return cursor.fetchone()[0]
         finally:
             conn.close()
